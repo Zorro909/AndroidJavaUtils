@@ -2,10 +2,18 @@ package JavaUtils.HTTPManager;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -22,11 +30,13 @@ import java.util.Set;
  */
 public class Connection {
 
+    boolean connected = false;
 	HttpURLConnection conn;
 	DataOutputStream wr;
 	BufferedReader br;
 	private String userAgent = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36";
-
+	private String content = "text/plain";
+	
 	/**
 	 * Initialising the Class Connection with a already open URLConnection
 	 * 
@@ -61,12 +71,8 @@ public class Connection {
 	 *             "hppt:www.google.ocm", Right: "http://www.google.com")
 	 */
 	public Connection(String url) throws MalformedURLException, IOException {
-		if (!url.startsWith("http://")) {
-			if (url.startsWith("https://")) {
-				url = url.replace("https://", "http://");
-			} else {
+		if (!url.startsWith("http")) {
 				url = "http://" + url;
-			}
 		}
 		conn = (HttpURLConnection) new URL(url).openConnection();
 	}
@@ -104,9 +110,9 @@ public class Connection {
 			index++;
 		}
 		conn.setRequestMethod("POST");
-		conn.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+		conn.setRequestProperty("Content-Type", content + "; charset=UTF-8");
 		conn.setRequestProperty("User-Agent", userAgent);
-		conn.setRequestProperty("Content-Length", String.valueOf(sb.length()));
+		if(!requestPropertys.isEmpty())conn.setRequestProperty("Content-Length", String.valueOf(sb.length()));
 		conn.setDoOutput(true);
 		conn.setDoInput(true);
 		conn.setUseCaches(false);
@@ -114,6 +120,7 @@ public class Connection {
 		wr.writeBytes(sb);
 		wr.flush();
 		br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		connected = true;
 		return this;
 	}
 
@@ -164,13 +171,14 @@ public class Connection {
 									requestPropertys.values()))
 					.openConnection();
 		conn.setDoOutput(needToWrite);
-		conn.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+		conn.setRequestProperty("Content-Type", content + "; charset=UTF-8");
 		conn.setRequestProperty("User-Agent", userAgent);
 		conn.setRequestMethod("GET");
 		if (needToWrite)
 			wr = new DataOutputStream(conn.getOutputStream());
 		br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 		conn.connect();
+		connected = true;
 		return this;
 	}
 
@@ -219,6 +227,9 @@ public class Connection {
 			sb.append(input + "\n");
 		}
 		if(sb.length()!=0)sb.substring(0, sb.length() - 1);
+		if(conn.getResponseCode()==301){
+		    return new Connection(conn.getHeaderField("Location")).initGet(false, new HashMap()).get();
+		}
 		return new String(sb);
 	}
 
@@ -254,5 +265,13 @@ public class Connection {
 	public String post(String output) throws IOException {
 		return new String(writeToHost(output));
 	}
+
+    public void addCookie(URI domain, String name, String value) {
+        InetManager.cm.getCookieStore().add(domain, new HttpCookie(name, value));
+    }
+
+    public void setContentType(String type) {
+        content = type;
+    }
 
 }

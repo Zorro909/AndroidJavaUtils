@@ -18,6 +18,7 @@ import java.net.URLConnection;
 public class InetManager {
 
 	private static boolean set = false;
+	static CookieManager cm;
 	
 	/**
 	 * Opens {@link URLConnection}s
@@ -31,7 +32,7 @@ public class InetManager {
 	
 	private static void init() {
 		if(set)return;
-		CookieManager cm = new CookieManager();
+		cm = new CookieManager();
 		cm.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
 		CookieHandler.setDefault(cm);
 		set = true;

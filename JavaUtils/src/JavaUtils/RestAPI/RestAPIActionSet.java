@@ -15,9 +15,9 @@ public class RestAPIActionSet {
     HashMap<Pattern, Action> actions = new HashMap<Pattern, Action>();
     HashMap<Pattern, File> files = new HashMap<Pattern, File>();
     Action everyAction;
-    
+
     public void addAction(String url, Action a) {
-        if(url.equalsIgnoreCase("*")||url.equalsIgnoreCase("/*")){
+        if (url.equalsIgnoreCase("*") || url.equalsIgnoreCase("/*")) {
             everyAction = a;
             return;
         }
@@ -29,7 +29,6 @@ public class RestAPIActionSet {
 
     public XmlElement request(HashMap<String, String> conf) throws Exception {
         String url = URLDecoder.decode(conf.get("Request-URL"), "UTF-8");
-        System.out.println(url);
         HashMap<String, String> vars = new HashMap<String, String>();
         if (url.contains("?")) {
             String variables = url.split("\\?", 2)[1];
@@ -51,14 +50,44 @@ public class RestAPIActionSet {
             }
             url = url.split("\\?", 2)[0];
         }
-        System.out.println(url);
         CustomParseAble co = null;
         boolean found = false;
         boolean raw = false;
         String r = "error_404";
         Action a = null;
         ParseObject po = null;
-        if(everyAction!=null){
+
+        for (Pattern p : actions.keySet()) {
+            if (p.matcher(url).matches()) {
+                a = actions.get(p);
+                if (actions.get(p).isRaw()) {
+                    po = actions.get(p).executeRequest(conf, vars);
+                    co = new CustomParseAble(po, "");
+                    found = true;
+                    raw = true;
+                    if (po.objects.get("raw") instanceof byte[]) {
+                        final byte[] d = (byte[]) po.objects.get("raw");
+                        return new bxml(co = new CustomParseAble(po, "")) {
+
+                            @Override
+                            public byte[] toBytes() {
+                                return d;
+                            }
+                        };
+                    }
+                    r = (String) po.objects.get("raw");
+                    break;
+                } else {
+                    po = actions.get(p).executeRequest(conf, vars);
+                    co = new CustomParseAble(po, "");
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found && everyAction == null) {
+            throw new Exception();
+        } else if (!found && everyAction != null) {
             if (everyAction.isRaw()) {
                 po = everyAction.executeRequest(conf, vars);
                 co = new CustomParseAble(po, "");
@@ -71,34 +100,20 @@ public class RestAPIActionSet {
                 found = true;
             }
             a = everyAction;
-        }else{
-        for (Pattern p : actions.keySet()) {
-            if (p.matcher(url).matches()) {
-                a = actions.get(p);
-                if (actions.get(p).isRaw()) {
-                    po = actions.get(p).executeRequest(conf, vars);
-                    co = new CustomParseAble(po, "");
-                    found = true;
-                    raw = true;
-                    r = (String) po.objects.get("raw");
-                    break;
-                } else {
-                    po = actions.get(p).executeRequest(conf, vars);
-                    co = new CustomParseAble(po, "");
-                    found = true;
-                    break;
-                }
-            }
         }
-        if (!found) { throw new Exception(); }
-        }
-        if(!raw){
-        return new XmlElement(co);
-        }else{
-            final String ra = (po.getObjects().containsKey("content_type") ? "http_content_type=" + po.getObjects().get("content_type") + ":" : "") + r;
-            return new XmlElement(co){
+        if (!raw) {
+            return new XmlElement(co);
+        } else {
+            final String ra = (po.getObjects().containsKey("content_type")
+                            ? "http_content_type=" + po.getObjects().get("content_type") + ":" : "")
+                            + (po.getObjects().containsKey("header")
+                                            ? "header:" + po.getObjects().get("header") + "&%" : "")
+                            + (po.getObjects().containsKey("status")
+                                            ? "status:" + po.getObjects().get("status") + "&%" : "")
+                            + r;
+            return new XmlElement(co) {
                 @Override
-                public String decode(){
+                public String decode() {
                     return ra;
                 }
             };
@@ -112,7 +127,9 @@ public class RestAPIActionSet {
 
     public boolean isFile(String s) {
         for (Pattern p : files.keySet()) {
-            if (p.matcher(s).matches()) return true;
+            if (p.matcher(s).matches()){
+                return true;
+            }
         }
         return false;
     }

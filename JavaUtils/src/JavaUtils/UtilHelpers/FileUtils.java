@@ -26,11 +26,15 @@ import javax.crypto.spec.SecretKeySpec;
 public class FileUtils {
 
     public static String readAll(File f) throws IOException {
+        return new String(readAllBytes(f));
+    }
+    
+    public static byte[] readAllBytes(File f) throws IOException{
         FileInputStream fileInputStream = new FileInputStream(f);
         byte[] data = new byte[(int) f.length()];
         fileInputStream.read(data);
         fileInputStream.close();
-        return new String(data,"UTF-8");
+        return data;
     }
 
     public static void deleteDirectory(File directory) {

@@ -137,17 +137,12 @@ public class UDPBroadcast {
 					InetAddress.getByName("0.0.0.0"));
 			socket.setBroadcast(true);
 			while (true) {
-				System.out.println(">>>Ready to receive broadcast packets!");
 				// Receive a packet
 				byte[] recvBuf = new byte[15000];
 				DatagramPacket packet = new DatagramPacket(recvBuf,
 						recvBuf.length);
 				socket.receive(packet);
 				// Packet received
-				System.out.println(">>>Discovery packet received from: "
-						+ packet.getAddress().getHostAddress());
-				System.out.println(">>>Packet received; data: "
-						+ new String(packet.getData()));
 				// See if the packet holds the right command (message)
 				String message = new String(packet.getData()).trim();
 					byte[] sendData = requestListener.process(message, packet.getAddress()).getBytes();
@@ -156,8 +151,6 @@ public class UDPBroadcast {
 							sendData.length, packet.getAddress(),
 							packet.getPort());
 					socket.send(sendPacket);
-					System.out.println(">>>Sent packet to: "
-							+ sendPacket.getAddress().getHostAddress());
 			}
 		} catch (IOException ex) {
 			Logger.getLogger(UDPBroadcast.class.getName()).log(Level.SEVERE,

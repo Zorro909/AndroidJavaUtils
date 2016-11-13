@@ -27,13 +27,13 @@ public class TcpConnection {
 	BufferedReader br;
 	int index;
 	boolean connected = true;
-	BufferedOutputStream out;
-	BufferedInputStream in;
+	protected BufferedOutputStream out;
+	protected BufferedInputStream in;
 	/**
 	 * @param accept
 	 * @throws IOException
 	 */
-	TcpConnection(Socket accept, int index) throws IOException {
+	protected TcpConnection(Socket accept, int index) throws IOException {
 		s = accept;
 		out = new BufferedOutputStream(s.getOutputStream());
 		in = new BufferedInputStream(s.getInputStream());
@@ -42,7 +42,7 @@ public class TcpConnection {
 		this.index = index;
 	}
 	
-	TcpConnection(InputStream in,OutputStream out,Socket s, int index){
+	protected TcpConnection(InputStream in,OutputStream out,Socket s, int index){
 		this.s = s;
 		this.out = new BufferedOutputStream(out);
 		this.in = new BufferedInputStream(in);
@@ -75,7 +75,7 @@ public class TcpConnection {
 	 */
 	public boolean writeLine(String message) {
 		try {
-			pw.println(message);
+		    pw.println(message);
 			written.append(message + "\n");
 			if(written.length()>200)written.delete(0, 50);
 			pw.flush();
@@ -207,4 +207,8 @@ public class TcpConnection {
 	public Socket getSocket() {
 		return s;
 	}
+
+    public int getIndex() {
+        return index;
+    }
 }
